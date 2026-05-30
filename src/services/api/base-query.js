@@ -11,7 +11,7 @@ import {
 
 
 
-export const baseServerUrl =  "https://mososoup-api-tqn7.onrender.com"
+export const baseServerUrl =  "https://one-submit.onrender.com"
 
 // export const baseServerUrl = "http://127.0.0.1:8000"; // Changed for local testing
 
