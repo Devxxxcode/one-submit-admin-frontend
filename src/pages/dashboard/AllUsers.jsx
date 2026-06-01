@@ -163,10 +163,16 @@ const AllUsers = () => {
 	const [confirmPassword, setConfirmPassword] = useState("");
 
 	const handleOpenUpdatePasswordModal = () => {
+		setPassword("");
+		setConfirmPassword("");
+		setAdminPassword("");
 		setIsUpdatePasswordModalOpen(true);
 	};
 
 	const handleCloseUpdatePasswordModal = () => {
+		setPassword("");
+		setConfirmPassword("");
+		setAdminPassword("");
 		setIsUpdatePasswordModalOpen(false);
 	};
 
@@ -186,6 +192,7 @@ const AllUsers = () => {
 				body: {
 					user: userID,
 					password: password,
+					admin_password: adminPassword,
 				},
 			}).unwrap();
 
@@ -193,6 +200,9 @@ const AllUsers = () => {
 			if (res?.data) updateUserLocal(res.data);
 			else await refetchUsers();
 			invalidateRequestTag(ENDPOINT.GET_ALL_USERS);
+			setPassword("");
+			setConfirmPassword("");
+			setAdminPassword("");
 			setIsUpdatePasswordModalOpen(false);
 		} catch (error) {
 			console.error(error);
@@ -209,10 +219,16 @@ const AllUsers = () => {
 		useState("");
 
 	const handleOpenUpdateWithdrawalPasswordModal = () => {
+		setWithdrawalPassword("");
+		setConfirmWithdrawalPassword("");
+		setAdminPassword("");
 		setIsUpdateWithdrawalPasswordModalOpen(true);
 	};
 
 	const handleCloseUpdateWithdrawalPasswordModal = () => {
+		setWithdrawalPassword("");
+		setConfirmWithdrawalPassword("");
+		setAdminPassword("");
 		setIsUpdateWithdrawalPasswordModalOpen(false);
 	};
 
@@ -234,6 +250,7 @@ const AllUsers = () => {
 				body: {
 					user: userID,
 					password: withdrawalPassword,
+					admin_password: adminPassword,
 				},
 			}).unwrap();
 
@@ -241,6 +258,9 @@ const AllUsers = () => {
 			if (res?.data) updateUserLocal(res.data);
 			else await refetchUsers();
 			invalidateRequestTag(ENDPOINT.GET_ALL_USERS);
+			setWithdrawalPassword("");
+			setConfirmWithdrawalPassword("");
+			setAdminPassword("");
 			setIsUpdateWithdrawalPasswordModalOpen(false);
 		} catch (error) {
 			console.error(error);
@@ -772,6 +792,12 @@ const AllUsers = () => {
 	const [selectedPackage, setSelectedPackage] = useState("");
 	const [packageAdminPassword, setPackageAdminPassword] = useState("");
 	const [availablePacks, setAvailablePacks] = useState([]);
+	const [isImmediateNegativeComboModalOpen, setIsImmediateNegativeComboModalOpen] =
+		useState(false);
+	const [negativeComboAmount, setNegativeComboAmount] = useState("");
+	const [negativeComboCount, setNegativeComboCount] = useState("");
+	const [negativeComboAdminPassword, setNegativeComboAdminPassword] =
+		useState("");
 
 	const handleOpenDeactivateBalanceModal = () => {
 		setIsDeactivateBalanceModalOpen(true);
@@ -792,6 +818,20 @@ const AllUsers = () => {
 		setIsUpdatePackageModalOpen(false);
 		setSelectedPackage("");
 		setPackageAdminPassword("");
+	};
+
+	const handleOpenImmediateNegativeComboModal = () => {
+		setNegativeComboAmount("");
+		setNegativeComboCount("");
+		setNegativeComboAdminPassword("");
+		setIsImmediateNegativeComboModalOpen(true);
+	};
+
+	const handleCloseImmediateNegativeComboModal = () => {
+		setIsImmediateNegativeComboModalOpen(false);
+		setNegativeComboAmount("");
+		setNegativeComboCount("");
+		setNegativeComboAdminPassword("");
 	};
 
 	const handleExportPDF = () => {
@@ -1086,6 +1126,40 @@ const AllUsers = () => {
 		} catch (err) {
 			console.error(err);
 			toast.error(err?.data?.message || "Failed to update package");
+		}
+	};
+
+	const [postImmediateNegativeCombo, { isLoading: loadingImmediateNegativeCombo }] =
+		usePostRequestMutation();
+
+	const handleAssignImmediateNegativeCombo = async () => {
+		try {
+			const formValues = {
+				user: selectedRow?.id,
+				negative_amount: negativeComboAmount,
+				admin_password: negativeComboAdminPassword,
+			};
+
+			if (negativeComboCount !== "") {
+				formValues.number_of_negative_product = Number(negativeComboCount);
+			}
+
+			if (!validateForm(formValues)) return;
+
+			const res = await postImmediateNegativeCombo({
+				url: ENDPOINT.POST_ASSIGN_NEGATIVE_COMBO,
+				body: formValues,
+			}).unwrap();
+
+			toast.success(
+				res?.message || "Immediate negative combo assigned successfully",
+			);
+			if (res?.data) updateUserLocal(res.data);
+			else await refetchUsers();
+			invalidateRequestTag(ENDPOINT.GET_ALL_USERS);
+			handleCloseImmediateNegativeComboModal();
+		} catch (err) {
+			console.error(err);
 		}
 	};
 
@@ -1643,6 +1717,14 @@ const AllUsers = () => {
 
 													<MenuItem
 														onClick={() =>
+															handleOpenImmediateNegativeComboModal()
+														}
+													>
+														Assign negative combo now
+													</MenuItem>
+
+													<MenuItem
+														onClick={() =>
 															handleOpenRemoveBonusModal(
 																selectedRow,
 															)
@@ -1715,6 +1797,13 @@ const AllUsers = () => {
 							value={confirmPassword}
 							onChange={(e) => setConfirmPassword(e.target.value)}
 						/>
+						<TextField
+							label="Administrateur password"
+							type="password"
+							fullWidth
+							value={adminPassword}
+							onChange={(e) => setAdminPassword(e.target.value)}
+						/>
 					</div>
 				</DialogContent>
 
@@ -1777,6 +1866,13 @@ const AllUsers = () => {
 							onChange={(e) =>
 								setConfirmWithdrawalPassword(e.target.value)
 							}
+						/>
+						<TextField
+							label="Administrateur password"
+							type="password"
+							fullWidth
+							value={adminPassword}
+							onChange={(e) => setAdminPassword(e.target.value)}
 						/>
 					</div>
 				</DialogContent>
@@ -2783,6 +2879,94 @@ const AllUsers = () => {
 							<AiOutlineLoading className="animate-spin" />
 						)}{" "}
 						Update Package
+					</Button>
+				</DialogActions>
+			</Dialog>
+
+			<Dialog
+				open={isImmediateNegativeComboModalOpen}
+				onClose={handleCloseImmediateNegativeComboModal}
+				fullWidth
+				maxWidth="sm"
+			>
+				<DialogTitle>
+					<span style={{ color: "#1A73E8", fontWeight: "bold" }}>
+						Assign Immediate Negative Combo
+					</span>
+				</DialogTitle>
+				<DialogContent>
+					<div className="space-y-4 mt-4">
+						<TextField
+							label="Username"
+							fullWidth
+							disabled
+							value={selectedRow?.username}
+						/>
+
+						<TextField
+							label="Current submission progress"
+							fullWidth
+							disabled
+							value={`${selectedRow?.number_of_submission_today || 0} / ${selectedRow?.wallet?.package?.daily_missions || 0}`}
+						/>
+
+						<TextField
+							label="Negative amount"
+							fullWidth
+							type="number"
+							value={negativeComboAmount}
+							onChange={(e) => setNegativeComboAmount(e.target.value)}
+							placeholder="Enter the frozen amount to assign"
+						/>
+
+						<FormControl fullWidth>
+							<InputLabel>Combo Count (Optional)</InputLabel>
+							<Select
+								value={negativeComboCount}
+								onChange={(e) => setNegativeComboCount(e.target.value)}
+								label="Combo Count (Optional)"
+							>
+								<MenuItem value="">
+									<em>Best fit (1 to 3)</em>
+								</MenuItem>
+								<MenuItem value={1}>1 product</MenuItem>
+								<MenuItem value={2}>2 products</MenuItem>
+								<MenuItem value={3}>3 products</MenuItem>
+							</Select>
+						</FormControl>
+
+						<TextField
+							label="Admin Password"
+							fullWidth
+							type="password"
+							value={negativeComboAdminPassword}
+							onChange={(e) =>
+								setNegativeComboAdminPassword(e.target.value)
+							}
+							placeholder="Enter admin transactional password"
+						/>
+					</div>
+				</DialogContent>
+
+				<DialogActions>
+					<Button
+						onClick={handleCloseImmediateNegativeComboModal}
+						variant="outlined"
+						color="warning"
+					>
+						Close
+					</Button>
+
+					<Button
+						onClick={handleAssignImmediateNegativeCombo}
+						disabled={loadingImmediateNegativeCombo}
+						variant="contained"
+						color="primary"
+					>
+						{loadingImmediateNegativeCombo && (
+							<AiOutlineLoading className="animate-spin" />
+						)}{" "}
+						Assign Now
 					</Button>
 				</DialogActions>
 			</Dialog>
