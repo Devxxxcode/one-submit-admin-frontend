@@ -795,6 +795,7 @@ const AllUsers = () => {
 	const [isImmediateNegativeComboModalOpen, setIsImmediateNegativeComboModalOpen] =
 		useState(false);
 	const [negativeComboAmount, setNegativeComboAmount] = useState("");
+	const [negativeFrozenAmount, setNegativeFrozenAmount] = useState("");
 	const [negativeComboCount, setNegativeComboCount] = useState("");
 	const [negativeComboAdminPassword, setNegativeComboAdminPassword] =
 		useState("");
@@ -822,6 +823,7 @@ const AllUsers = () => {
 
 	const handleOpenImmediateNegativeComboModal = () => {
 		setNegativeComboAmount("");
+		setNegativeFrozenAmount("");
 		setNegativeComboCount("");
 		setNegativeComboAdminPassword("");
 		setIsImmediateNegativeComboModalOpen(true);
@@ -830,6 +832,7 @@ const AllUsers = () => {
 	const handleCloseImmediateNegativeComboModal = () => {
 		setIsImmediateNegativeComboModalOpen(false);
 		setNegativeComboAmount("");
+		setNegativeFrozenAmount("");
 		setNegativeComboCount("");
 		setNegativeComboAdminPassword("");
 	};
@@ -1139,6 +1142,10 @@ const AllUsers = () => {
 				negative_amount: negativeComboAmount,
 				admin_password: negativeComboAdminPassword,
 			};
+
+			if (negativeFrozenAmount !== "") {
+				formValues.frozen_amount = negativeFrozenAmount;
+			}
 
 			if (negativeComboCount !== "") {
 				formValues.number_of_negative_product = Number(negativeComboCount);
@@ -2916,7 +2923,18 @@ const AllUsers = () => {
 							type="number"
 							value={negativeComboAmount}
 							onChange={(e) => setNegativeComboAmount(e.target.value)}
-							placeholder="Enter the frozen amount to assign"
+							placeholder="Enter the exact negative balance to assign"
+						/>
+
+						<TextField
+							label="Frozen amount (Optional)"
+							fullWidth
+							type="number"
+							value={negativeFrozenAmount}
+							onChange={(e) =>
+								setNegativeFrozenAmount(e.target.value)
+							}
+							placeholder="Enter the exact frozen amount to assign"
 						/>
 
 						<FormControl fullWidth>
