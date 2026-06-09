@@ -761,6 +761,14 @@ const AllUsers = () => {
 		exchange: "N/A",
 		email: "N/A",
 	});
+	const [isPaymentDetailsModalOpen, setIsPaymentDetailsModalOpen] =
+		useState(false);
+	const [paymentWallet, setPaymentWallet] = useState("");
+	const [paymentExchange, setPaymentExchange] = useState("");
+	const [paymentIsActive, setPaymentIsActive] = useState(true);
+	const [paymentAdminPassword, setPaymentAdminPassword] = useState("");
+	const [isPaymentDetailsFetching, setIsPaymentDetailsFetching] =
+		useState(false);
 
 	const handleOpenUserInfoModal = (row) => {
 		handleSeeMoreInfo();
@@ -770,6 +778,35 @@ const AllUsers = () => {
 	const handleCloseUserInfoModal = () => {
 		setIsUserInfoModalOpen(false);
 		setUserInfo({});
+	};
+
+	const handleOpenPaymentDetailsModal = async () => {
+		setPaymentWallet("");
+		setPaymentExchange("");
+		setPaymentIsActive(true);
+		setIsPaymentDetailsModalOpen(true);
+		setPaymentAdminPassword("");
+		setIsPaymentDetailsFetching(true);
+		try {
+			const data = await handleSeeMoreInfo();
+			const method = data?.use_payment_method || {};
+			setPaymentWallet(method?.wallet || "");
+			setPaymentExchange(method?.exchange || "");
+			setPaymentIsActive(method?.is_active ?? true);
+		} catch (err) {
+			console.error(err);
+		} finally {
+			setIsPaymentDetailsFetching(false);
+		}
+	};
+
+	const handleClosePaymentDetailsModal = () => {
+		setIsPaymentDetailsModalOpen(false);
+		setPaymentWallet("");
+		setPaymentExchange("");
+		setPaymentIsActive(true);
+		setPaymentAdminPassword("");
+		setIsPaymentDetailsFetching(false);
 	};
 
 	const [isRemoveBonusModalOpen, setIsRemoveBonusModalOpen] = useState(false);
@@ -1069,6 +1106,45 @@ const AllUsers = () => {
 			}).unwrap();
 
 			setUserInfo(res?.data);
+			return res?.data;
+		} catch (err) {
+			console.error(err);
+			throw err;
+		}
+	};
+
+	const [
+		postUpdateUserPaymentMethod,
+		{ isLoading: loadingUpdateUserPaymentMethod },
+	] = usePostRequestMutation();
+
+	const handleSaveUserPaymentMethod = async () => {
+		try {
+			const userID = selectedRow?.id;
+			const values = {
+				user: userID,
+				wallet: paymentWallet,
+				exchange: paymentExchange,
+				is_active: paymentIsActive,
+				admin_password: paymentAdminPassword,
+			};
+
+			if (!validateForm(values, ["wallet", "exchange"])) return;
+
+			const res = await postUpdateUserPaymentMethod({
+				url: ENDPOINT.POST_UPDATE_USER_PAYMENT_METHOD,
+				body: values,
+			}).unwrap();
+
+			toast.success(res?.message);
+			if (res?.data) {
+				setUserInfo(res.data);
+				updateUserLocal(res.data);
+			} else {
+				await refetchUsers();
+			}
+			invalidateRequestTag(ENDPOINT.GET_ALL_USERS);
+			handleClosePaymentDetailsModal();
 		} catch (err) {
 			console.error(err);
 		}
@@ -1712,6 +1788,14 @@ const AllUsers = () => {
 														}
 													>
 														See more information
+													</MenuItem>
+
+													<MenuItem
+														onClick={() =>
+															handleOpenPaymentDetailsModal()
+														}
+													>
+														View / update payment details
 													</MenuItem>
 
 													<MenuItem
@@ -2657,7 +2741,7 @@ const AllUsers = () => {
 									style={{ textTransform: "none" }}
 									onClick={() =>
 										navigator.clipboard.writeText(
-											userInfo.exchange || "N/A",
+											userInfo?.use_payment_method?.exchange || "N/A",
 										)
 									}
 								>
@@ -2691,6 +2775,101 @@ const AllUsers = () => {
 						variant="outlined"
 					>
 						Close
+					</Button>
+				</DialogActions>
+			</Dialog>
+
+			<Dialog
+				open={isPaymentDetailsModalOpen}
+				onClose={handleClosePaymentDetailsModal}
+				fullWidth
+				maxWidth="sm"
+				>
+					<DialogTitle>View / Update Payment Details</DialogTitle>
+					<DialogContent>
+						{isPaymentDetailsFetching ? (
+							<Loading className="my-14" />
+						) : (
+							<div className="grid grid-cols-1 gap-4 mt-2">
+								<TextField
+									label="Username"
+									fullWidth
+									disabled
+									value={selectedRow?.username || ""}
+								/>
+								<TextField
+									label="Email address"
+									fullWidth
+									disabled
+									value={userInfo?.email || ""}
+								/>
+								<TextField
+									label="Phone number"
+									fullWidth
+									disabled
+									value={userInfo?.phone_number || ""}
+								/>
+								<TextField
+									label="Wallet address"
+									fullWidth
+									value={paymentWallet}
+									onChange={(e) => setPaymentWallet(e.target.value)}
+									placeholder="Enter wallet or TRC address"
+								/>
+								<TextField
+									label="Exchange platform"
+									fullWidth
+									value={paymentExchange}
+									onChange={(e) => setPaymentExchange(e.target.value)}
+									placeholder="Enter exchange name"
+								/>
+								<FormControl fullWidth>
+									<InputLabel>Payment status</InputLabel>
+									<Select
+										value={paymentIsActive ? "active" : "inactive"}
+										label="Payment status"
+										onChange={(e) =>
+											setPaymentIsActive(e.target.value === "active")
+										}
+									>
+										<MenuItem value="active">Active</MenuItem>
+										<MenuItem value="inactive">Inactive</MenuItem>
+									</Select>
+								</FormControl>
+								<TextField
+									label="Administrateur password"
+									type="password"
+									fullWidth
+									value={paymentAdminPassword}
+									onChange={(e) =>
+										setPaymentAdminPassword(e.target.value)
+									}
+									required
+								/>
+							</div>
+						)}
+					</DialogContent>
+				<DialogActions>
+					<Button
+						onClick={handleClosePaymentDetailsModal}
+						color="warning"
+						variant="outlined"
+						disabled={loadingUpdateUserPaymentMethod}
+					>
+						Close
+					</Button>
+					<Button
+						onClick={handleSaveUserPaymentMethod}
+						color="primary"
+						variant="contained"
+						disabled={
+							loadingUpdateUserPaymentMethod || isPaymentDetailsFetching
+						}
+					>
+						{loadingUpdateUserPaymentMethod && (
+							<AiOutlineLoading className="animate-spin " />
+						)}{" "}
+						Save Payment Details
 					</Button>
 				</DialogActions>
 			</Dialog>

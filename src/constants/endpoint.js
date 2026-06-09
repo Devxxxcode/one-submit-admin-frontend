@@ -52,6 +52,7 @@ export const ENDPOINT = {
 	UPDATE_REG_BONUS: "/site_admin/users/toggle-reg-bonus/",
 	UPDATE_MIN_BALANCE: "/site_admin/users/toggle-min-balance/",
 	POST_SEE_MORE_INFORMATION: "/site_admin/users/get_user_info/",
+	POST_UPDATE_USER_PAYMENT_METHOD: "/site_admin/users/update-payment-method/",
 	POST_USER_ACTIVE: "/site_admin/users/toggle_user_active/",
 	POST_UPDATE_CREDIT_SCORE: "/site_admin/users/update_credit_score/",
 	POST_REST_ACCOUNT_FOR_TASK: "/site_admin/users/reset_user_account/",
